@@ -1,0 +1,35 @@
+# Skyramp Workspace Configuration
+workspace:
+  repoName: sxarsky/prefect-sutboot
+  repoUrl: https://github.com/sxarsky/prefect-sutboot
+metadata:
+  schemaVersion: v1
+  executorVersion: v1.3.34
+  createdAt: "2026-07-18T22:13:55.357Z"
+  updatedAt: "2026-07-18T22:13:55.364Z"
+services:
+  - serviceName: prefect-server-backend
+    language: python
+    framework: pytest
+    testDirectory: tests
+    api:
+      schemaPath: http://localhost:4200/api/openapi.json
+      authType: none
+      authHeader: ""
+      baseUrl: http://localhost:4200/api
+    runtimeDetails:
+      serverStartCommand: docker compose -f .skyramp/sut/docker-compose.testbot.yml --project-directory . up -d api
+      runtime: docker
+      dockerNetwork: prefect-sutboot_default
+  - serviceName: prefect-ui-v2-frontend
+    language: typescript
+    framework: playwright
+    testDirectory: ui-v2/e2e
+    api:
+      authType: none
+      authHeader: ""
+      baseUrl: http://localhost:5173
+    runtimeDetails:
+      serverStartCommand: docker compose -f .skyramp/sut/docker-compose.testbot.yml --project-directory . up -d ui
+      runtime: docker
+      dockerNetwork: prefect-sutboot_default

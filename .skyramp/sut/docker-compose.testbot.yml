@@ -1,0 +1,71 @@
+# Skyramp Testbot SUT — generated for docker_compose bootstrap.
+# Runs the Prefect API server + database from PR source (uv sync + prefect
+# server start), the ui-v2 React frontend against it (vite dev server), and
+# a best-effort seed job so list/pagination endpoints have sample data.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: prefect
+      POSTGRES_PASSWORD: prefect
+      POSTGRES_DB: prefect
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prefect -d prefect"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    working_dir: /opt/prefect
+    volumes:
+      - .:/opt/prefect
+    environment:
+      PREFECT_SERVER_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:prefect@postgres:5432/prefect
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4200:4200"
+    command: >
+      sh -c "apt-get update -qq && apt-get install -y -qq --no-install-recommends git > /dev/null &&
+             uv sync --locked --no-progress &&
+             uv run prefect server start --host 0.0.0.0 --analytics-off"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 90s
+
+  seed:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    working_dir: /opt/prefect
+    volumes:
+      - .:/opt/prefect
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: "no"
+    command: sh -c "python3 .skyramp/sut/seed.py || echo 'seed step failed, continuing' >&2"
+
+  ui:
+    image: node:22.13.0-bookworm-slim
+    working_dir: /opt/prefect/ui-v2
+    volumes:
+      - .:/opt/prefect
+    environment:
+      VITE_API_URL: http://localhost:4200/api
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5173:5173"
+    command: sh -c "npm ci --legacy-peer-deps --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:5173/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 90s
