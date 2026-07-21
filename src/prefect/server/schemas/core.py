@@ -23,6 +23,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    computed_field,
     StrictBool,
     StrictFloat,
     StrictInt,
@@ -96,6 +97,12 @@ class Flow(ORMBaseModel):
         description="A dictionary of key-value labels. Values can be strings, numbers, or booleans.",
         examples=[{"key": "value1", "key2": 42}],
     )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def name_length(self) -> int:
+        """The number of characters in the flow's name."""
+        return len(self.name)
 
 
 class FlowRunPolicy(PrefectBaseModel):
