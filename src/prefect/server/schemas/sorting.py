@@ -111,6 +111,7 @@ class FlowSort(AutoEnum):
     UPDATED_DESC = AutoEnum.auto()
     NAME_ASC = AutoEnum.auto()
     NAME_DESC = AutoEnum.auto()
+    CREATED_ASC = AutoEnum.auto()
 
     def as_sql_sort(self) -> Iterable[sa.ColumnElement[Any]]:
         """Return an expression used to sort task runs"""
@@ -119,6 +120,7 @@ class FlowSort(AutoEnum):
         db = provide_database_interface()
         sort_mapping: dict[str, Iterable[sa.ColumnElement[Any]]] = {
             "CREATED_DESC": [db.Flow.created.desc()],
+            "CREATED_ASC": [db.Flow.created.asc()],
             "UPDATED_DESC": [db.Flow.updated.desc()],
             "NAME_ASC": [db.Flow.name.asc()],
             "NAME_DESC": [db.Flow.name.desc()],
