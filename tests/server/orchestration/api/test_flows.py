@@ -17,6 +17,7 @@ class TestCreateFlow:
         response = await client.post("/flows/", json=flow_data)
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["name"] == "my-flow"
+        assert response.json()["name_length"] == len("my-flow")
         flow_id = response.json()["id"]
 
         flow = await models.flows.read_flow(session=session, flow_id=flow_id)
@@ -30,6 +31,7 @@ class TestCreateFlow:
         response = await client.post("/flows/", json=flow_data)
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["name"] == "my-flow"
+        assert response.json()["name_length"] == len("my-flow")
         assert parse_datetime(response.json()["created"]) >= current_time
         assert parse_datetime(response.json()["updated"]) >= current_time
 
@@ -126,6 +128,7 @@ class TestReadFlow:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["id"] == flow_id
         assert response.json()["name"] == "my-flow"
+        assert response.json()["name_length"] == len("my-flow")
 
     async def test_read_flow_returns_404_if_does_not_exist(self, client):
         response = await client.get(f"/flows/{uuid4()}")
@@ -142,6 +145,7 @@ class TestReadFlow:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["id"] == flow_id
         assert response.json()["name"] == "my-flow"
+        assert response.json()["name_length"] == len("my-flow")
 
     async def test_read_flow_by_name_returns_404_if_does_not_exist(self, client):
         response = await client.get(f"/flows/{uuid4()}")
@@ -630,12 +634,14 @@ class TestPaginateFlows:
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["results"][0]["name"] == "my-flow-1"
+        assert response.json()["results"][0]["name_length"] == len("my-flow-1")
 
         response_desc = await client.post(
             "/flows/paginate", json=dict(sort=schemas.sorting.FlowSort.NAME_DESC)
         )
         assert response_desc.status_code == status.HTTP_200_OK
         assert response_desc.json()["results"][0]["name"] == "my-flow-2"
+        assert response_desc.json()["results"][0]["name_length"] == len("my-flow-2")
 
     async def test_read_flows_returns_empty_list(self, client):
         response = await client.post("/flows/paginate")
